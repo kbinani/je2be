@@ -22,3 +22,6 @@
 [submodule "deps/cxxopts"]
 	path = deps/cxxopts
 	url = https://github.com/jarro2783/cxxopts.git
+[submodule "deps/ViaBackwards"]
+	path = deps/ViaBackwards
+	url = https://github.com/ViaVersion/ViaBackwards.git
