@@ -60,6 +60,8 @@
 #include <je2be/toje/constants.hpp>
 #include <je2be/tobe/versions.hpp>
 
+#include <je2be/via/backward-converter.hpp>
+
 #include <je2be/status.hpp>
 #include <je2be/nullable.hpp>
 #include <je2be/fs.hpp>

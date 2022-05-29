@@ -25,6 +25,16 @@ if ("${CMAKE_PROJECT_NAME}" STREQUAL "${PROJECT_NAME}")
   endif()
 endif()
 
+add_executable(create-backward-converter tool/create-backward-converter.cpp)
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp
+  COMMAND create-backward-converter ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp ${CMAKE_CURRENT_SOURCE_DIR}/deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json
+  DEPENDS deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json)
+
+add_custom_target(prepare-backward-converter
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp
+  SOURCES deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json)
+
 set(je2be_files
   #begin je2be source files
   include/je2be.hpp
@@ -288,6 +298,7 @@ set(je2be_files
   #end libminecraft-file source files
   .editorconfig
   .clang-format)
+list(APPEND je2be_files include/je2be/via/backward-converter.hpp)
 set(test_files
   test/main.cpp
   test/moving-piston.test.hpp
@@ -344,6 +355,7 @@ target_include_directories(je2be INTERFACE
   deps/json/include
   deps/minizip-ng)
 target_link_libraries(je2be INTERFACE ${je2be_link_libraries})
+add_dependencies(je2be prepare-backward-converter)
 
 add_executable(j2b example/j2b.cpp ${je2be_files})
 target_link_libraries(j2b je2be cxxopts)
