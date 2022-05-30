@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include <nlohmann/json.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -32,44 +34,46 @@ int main(int argc, char *argv[]) {
   using namespace std;
   namespace fs = std::filesystem;
 
-  if (argc < 1) {
+  if (argc < 2) {
     return -1;
   }
+
+  fs::path directory(argv[2]);
+  if (!fs::is_directory(directory)) {
+    return -1;
+  }
+
   ofstream out(argv[1]);
-  if (!out) {
-    return -1;
+  out << "#pragma once" << endl;
+  out << endl;
+  out << "namespace je2be::via {" << endl;
+  out << endl;
+  out << "class BackwardConverter {" << endl;
+  out << "  BackwardConverter() = delete;" << endl;
+
+  for (auto item : fs::directory_iterator(directory)) {
+    if (!item.is_regular_file()) {
+      continue;
+    }
+    auto p = item.path();
+    auto filename = p.filename();
+    if (filename.extension().string() != ".json" || !filename.string().starts_with("mapping-")) {
+      continue;
+    }
+    cout << p << endl;
+    ifstream ifs(p.string());
+    auto obj = nlohmann::json::parse(ifs);
+    auto found = obj.find("blockstates");
+    if (found == obj.end()) {
+      continue;
+    }
+    auto const &blockstates = found.value();
+    cout << blockstates << endl;
   }
 
-  // TODO: Parse json and create c++ class
+  out << "};" << endl;
+  out << endl;
+  out << "} // namespace::via" << endl;
 
-  out << "// clang-format off" << endl;
-
-  vector<char> buffer(256);
-  for (int i = 2; i < argc; i++) {
-    cout << "reading " << argv[i] << endl;
-    FILE *fp = fopen(argv[i], "rb");
-    if (!fp) {
-      return -1;
-    }
-    fs::path file(argv[i]);
-    string name = file.filename().string();
-    name = Replace(name, ".", "_");
-    name = Replace(name, "-", "_");
-
-    out << "char const " << name << "[] = {" << endl;
-    size_t size = 0;
-    while (!feof(fp)) {
-      size_t read = fread(buffer.data(), 1, buffer.size(), fp);
-      out << "  ";
-      for (size_t j = 0; j < read; j++) {
-        out << "0x" << hex << (int)buffer[j] << ", ";
-      }
-      size += read;
-      out << endl;
-    }
-    fclose(fp);
-    out << "};" << endl;
-    out << dec << "size_t const " << name << "_bytes = " << size << ";" << endl;
-  }
   return 0;
 }

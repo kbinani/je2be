@@ -25,16 +25,6 @@ if ("${CMAKE_PROJECT_NAME}" STREQUAL "${PROJECT_NAME}")
   endif()
 endif()
 
-add_executable(create-backward-converter tool/create-backward-converter.cpp)
-add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp
-  COMMAND create-backward-converter ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp ${CMAKE_CURRENT_SOURCE_DIR}/deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json
-  DEPENDS create-backward-converter deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json)
-
-add_custom_target(prepare-backward-converter
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp
-  SOURCES deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json)
-
 set(je2be_files
   #begin je2be source files
   include/je2be.hpp
@@ -342,8 +332,19 @@ add_subdirectory(deps/minizip-ng EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/cxxopts EXCLUDE_FROM_ALL)
 
-list(APPEND je2be_link_libraries mcfile leveldb minizip)
+add_executable(create-backward-converter tool/create-backward-converter.cpp)
+target_include_directories(create-backward-converter PRIVATE deps/json/include)
 
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp
+  COMMAND create-backward-converter ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp ${CMAKE_CURRENT_SOURCE_DIR}/deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data
+  DEPENDS create-backward-converter deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json)
+
+add_custom_target(prepare-backward-converter
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp
+  SOURCES deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json)
+
+list(APPEND je2be_link_libraries mcfile leveldb minizip)
 
 add_library(je2be INTERFACE ${je2be_files})
 target_include_directories(je2be INTERFACE
