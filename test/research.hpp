@@ -803,7 +803,7 @@ static void PistonArm() {
 }
 
 static void Backward() {
-  auto composite = je2be::via::Backward::ComposeConverter(je2be::via::Backward::Version::Version1_19, je2be::via::Backward::Version::Version1_13_2);
+  auto composite = je2be::via::Backward::ComposeConverter(je2be::via::Version::Version1_19, je2be::via::Version::Version1_13_2);
   auto dirtPath = std::make_shared<mcfile::je::Block const>("minecraft:dirt_path");
   auto converted = composite(dirtPath);
   std::cout << converted->toString() << std::endl;

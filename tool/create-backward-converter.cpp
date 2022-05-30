@@ -82,14 +82,14 @@ std::string classFormat = R"(
 
 namespace je2be::via {
 
+enum class Version : uint8_t {
+@{enum_definition}
+};
+
 class Backward {
   Backward() = delete;
 
 public:
-  enum class Version : uint8_t {
-@{enum_definition}
-  };
-
   using Converter = std::function<std::shared_ptr<mcfile::je::Block const>(std::shared_ptr<mcfile::je::Block const> const&)>;
 
   static Converter ComposeConverter(Version from, Version to) {
@@ -368,7 +368,7 @@ int main(int argc, char *argv[]) {
   enumDefinition << "Version" << versionPairs.back().second.toString("_") << " = " << enumValue << "," << endl;
 
   ofstream out(argv[1]);
-  string src = Replace(classFormat, "@{enum_definition}", Indent(Trim(enumDefinition.str()), "    "));
+  string src = Replace(classFormat, "@{enum_definition}", Indent(Trim(enumDefinition.str()), "  "));
   src = Replace(src, "@{convert_function_definitions}", Indent(Trim(convertFunctionDefinitions.str()), "  "));
   src = Replace(src, "@{converters_table}", Indent(Trim(convertersTable.str()), "      "));
   out << Trim(src) << endl;
