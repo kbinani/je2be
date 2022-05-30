@@ -6095,7 +6095,6 @@ private:
     s["minecraft:red_nether_brick_wall"] = "minecraft:cobblestone_wall";
     s["minecraft:red_sandstone_wall"] = "minecraft:cobblestone_wall";
     s["minecraft:sandstone_wall"] = "minecraft:cobblestone_wall";
-    s["minecraft:sandstone_wall"] = "minecraft:cobblestone_wall";
     s["minecraft:smoker"] = "minecraft:furnace";
     s["minecraft:smooth_quartz_slab"] = "minecraft:quartz_slab";
     s["minecraft:smooth_quartz_stairs"] = "minecraft:quartz_stairs";

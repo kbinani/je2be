@@ -331,7 +331,7 @@ int main(int argc, char *argv[]) {
         string key = it.key();
         if (key.ends_with("[")) {
           cout << "warning: eratta in key?: key=" << key << endl;
-          key = key.substr(0, key.size() - 1);
+          continue;
         }
         string value = it.value().get<string>();
         if (value.ends_with("[")) {
