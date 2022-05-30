@@ -82,16 +82,89 @@ std::string classFormat = R"(
 
 namespace je2be::via {
 
-class BackwardConverter {
-  BackwardConverter() = delete;
+class Backward {
+  Backward() = delete;
 
 public:
   enum class Version : uint8_t {
 @{enum_definition}
   };
+
+  using Converter = std::function<std::shared_ptr<mcfile::je::Block const>(std::shared_ptr<mcfile::je::Block const> const&)>;
+
+  static Converter ComposeConverter(Version from, Version to) {
+    CompositeConverter composite;
+    std::vector<Converter> converters;
+    for (uint8_t v = static_cast<uint8_t>(from); v < static_cast<uint8_t>(to); v++) {
+      auto converter = SelectConverter(static_cast<Version>(v));
+      if (!converter) {
+        return composite;
+      }
+      converters.push_back(converter);
+    }
+    composite.fConverters.swap(converters);
+    return composite;
+  }
+
+private:
+  struct CompositeConverter {
+    std::vector<Converter> fConverters;
+
+    std::shared_ptr<mcfile::je::Block const> operator() (std::shared_ptr<mcfile::je::Block const> const& input) const {
+      auto output = input;
+      for (auto const& converter : fConverters) {
+        output = converter(output);
+      }
+      return output;
+    }
+  };
+
+  static CompoundTagPtr CompoundTagFromDataString(std::string const &data) {
+    using namespace std;
+    auto found = data.find('[');
+    auto tag = Compound();
+    if (found != string::npos && data.ends_with(']')) {
+      auto props = Compound();
+      tag->set("Name", String(data.substr(0, found)));
+      auto s = data.substr(found, data.size() - found - 1);
+      istringstream input(s);
+      for (string kv; getline(input, kv, ',');) {
+        auto equal = kv.find('=');
+        if (equal == string::npos) {
+          continue;
+        }
+        auto key = kv.substr(0, equal);
+        auto value = kv.substr(equal + 1);
+        props->set(key, String(value));
+      }
+      tag->set("Properties", props);
+    } else {
+      tag->set("Name", String(data));
+    }
+    return tag;
+  }
+
+@{convert_function_definitions}
+
+  static Converter SelectConverter(Version from) {
+    static std::unordered_map<Version, Converter> const sConverters = {
+@{converters_table}
+    };
+    if (auto found = sConverters.find(from); found != sConverters.end()) {
+      return found->second;
+    } else {
+      return nullptr;
+    }
+  }
 };
 
 } // namespace je2be::via
+)";
+
+std::string emptyTableFunctionFormat = R"(
+static std::shared_ptr<mcfile::je::Block const> Convert@{version_pair}(std::shared_ptr<mcfile::je::Block const> const& input) {
+  return input;
+}
 )";
 
 std::string tableFunctionFormat = R"(
@@ -155,10 +228,10 @@ public:
     }
   }
 
-  std::string toString() const {
-    std::string ret = std::to_string(fMajor) + "." + std::to_string(fMinor);
+  std::string toString(std::string separator = ".") const {
+    std::string ret = std::to_string(fMajor) + separator + std::to_string(fMinor);
     if (fBugfix) {
-      ret += "." + std::to_string(*fBugfix);
+      ret += separator + std::to_string(*fBugfix);
     }
     return ret;
   }
@@ -180,6 +253,24 @@ public:
     }
   }
 
+  bool less(Version const &b) const {
+    if (fMajor == b.fMajor) {
+      if (fMinor == b.fMinor) {
+        if (fBugfix && b.fBugfix) {
+          return *fBugfix > *b.fBugfix;
+        } else if (fBugfix) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return fMinor > b.fMinor;
+      }
+    } else {
+      return fMajor > b.fMajor;
+    }
+  }
+
   int fMajor;
   int fMinor;
   std::optional<int> fBugfix;
@@ -187,6 +278,7 @@ public:
 
 int main(int argc, char *argv[]) {
   using namespace std;
+  using namespace nlohmann;
   namespace fs = std::filesystem;
 
   if (argc < 2) {
@@ -199,7 +291,8 @@ int main(int argc, char *argv[]) {
   }
 
   vector<pair<Version, Version>> versionPairs;
-  set<string> versions;
+  ostringstream convertFunctionDefinitions;
+  ostringstream convertersTable;
 
   for (auto item : fs::directory_iterator(directory)) {
     if (!item.is_regular_file()) {
@@ -220,29 +313,42 @@ int main(int argc, char *argv[]) {
     Version to(toVersionString);
     Version from(fromVersionString);
     versionPairs.push_back(make_pair(from, to)); // filename: 1.18to1.19, make_pair(1.19, 1.18)
-    versions.insert(from.toString());
-    versions.insert(to.toString());
+
+    string versionPair = from.toString("_") + "To" + to.toString("_");
+
+    convertersTable << "{Version::Version" << from.toString("_") << ", Convert" << versionPair << "}," << endl;
+
+    ifstream ifs(p.string());
+    auto obj = json::parse(ifs);
+    auto found = obj.find("blockstates");
+    if (found == obj.end()) {
+      convertFunctionDefinitions << Replace(emptyTableFunctionFormat, "@{version_pair}", versionPair);
+    } else {
+      json &blockstates = found.value();
+      ostringstream dedicated;
+      ostringstream rename;
+      for (json::iterator it = blockstates.begin(); it != blockstates.end(); it++) {
+        string key = it.key();
+        if (key.ends_with("[")) {
+          cout << "warning: eratta in key?: key=" << key << endl;
+          key = key.substr(0, key.size() - 1);
+        }
+        string value = it.value().get<string>();
+        if (value.ends_with("[")) {
+          rename << "s[\"" << key << "\"] = \"" << value.substr(0, value.size() - 1) << "\";" << endl;
+        } else {
+          dedicated << "s[\"" << key << "\"] = CompoundTagFromDataString(\"" << value << "\");" << endl;
+        }
+      }
+      string src = Replace(tableFunctionFormat, "@{rename_maps}", Indent(rename.str(), "  "));
+      src = Replace(src, "@{dedicated_maps}", Indent(dedicated.str(), "  "));
+      src = Replace(src, "@{version_pair}", versionPair);
+      convertFunctionDefinitions << src;
+    }
   }
 
   sort(versionPairs.begin(), versionPairs.end(), [](auto const &pairA, auto const &pairB) {
-    Version const &a = pairA.first;
-    Version const &b = pairB.first;
-
-    if (a.fMajor == b.fMajor) {
-      if (a.fMinor == b.fMinor) {
-        if (a.fBugfix && b.fBugfix) {
-          return *a.fBugfix > *b.fBugfix;
-        } else if (a.fBugfix) {
-          return true;
-        } else {
-          return false;
-        }
-      } else {
-        return a.fMinor > b.fMinor;
-      }
-    } else {
-      return a.fMajor > b.fMajor;
-    }
+    return pairA.first.less(pairB.first);
   });
 
   for (int i = 0; i < versionPairs.size() - 1; i++) {
@@ -256,13 +362,15 @@ int main(int argc, char *argv[]) {
   int enumValue = 1;
   ostringstream enumDefinition;
   for (auto const &v : versionPairs) {
-    enumDefinition << "Version" << Replace(v.first.toString(), ".", "_") << " = " << enumValue << "," << endl;
+    enumDefinition << "Version" << v.first.toString("_") << " = " << enumValue << "," << endl;
     enumValue++;
   }
-  enumDefinition << "Version" << Replace(versionPairs.back().second.toString(), ".", "_") << " = " << enumValue << "," << endl;
+  enumDefinition << "Version" << versionPairs.back().second.toString("_") << " = " << enumValue << "," << endl;
 
   ofstream out(argv[1]);
   string src = Replace(classFormat, "@{enum_definition}", Indent(Trim(enumDefinition.str()), "    "));
+  src = Replace(src, "@{convert_function_definitions}", Indent(Trim(convertFunctionDefinitions.str()), "  "));
+  src = Replace(src, "@{converters_table}", Indent(Trim(convertersTable.str()), "      "));
   out << Trim(src) << endl;
 
   return 0;

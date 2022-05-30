@@ -193,6 +193,7 @@ set(je2be_files
   include/je2be/toje/world.hpp
   include/je2be/uuid.hpp
   include/je2be/version.hpp
+  include/je2be/via/backward.hpp
   include/je2be/volume.hpp
   include/je2be/xxhash.hpp
   include/je2be/zip-file.hpp
@@ -288,7 +289,6 @@ set(je2be_files
   #end libminecraft-file source files
   .editorconfig
   .clang-format)
-list(APPEND je2be_files include/je2be/via/backward-converter.hpp)
 set(test_files
   test/main.cpp
   test/moving-piston.test.hpp
@@ -335,13 +335,17 @@ add_subdirectory(deps/cxxopts EXCLUDE_FROM_ALL)
 add_executable(create-backward-converter tool/create-backward-converter.cpp)
 target_include_directories(create-backward-converter PRIVATE deps/json/include)
 
+set(via_asset_files
+  #begin via_asset_files
+  #end via_asset_files
+)
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp
-  COMMAND create-backward-converter ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp ${CMAKE_CURRENT_SOURCE_DIR}/deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data
+  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward.hpp
+  COMMAND create-backward-converter ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward.hpp ${CMAKE_CURRENT_SOURCE_DIR}/deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data
   DEPENDS create-backward-converter deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json)
 
 add_custom_target(prepare-backward-converter
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward.hpp
   SOURCES deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json)
 
 list(APPEND je2be_link_libraries mcfile leveldb minizip)
