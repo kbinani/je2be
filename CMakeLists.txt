@@ -29,7 +29,7 @@ add_executable(create-backward-converter tool/create-backward-converter.cpp)
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp
   COMMAND create-backward-converter ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp ${CMAKE_CURRENT_SOURCE_DIR}/deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json
-  DEPENDS deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json)
+  DEPENDS create-backward-converter deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json)
 
 add_custom_target(prepare-backward-converter
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward-converter.hpp
