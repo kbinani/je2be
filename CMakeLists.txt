@@ -193,7 +193,6 @@ set(je2be_files
   include/je2be/toje/world.hpp
   include/je2be/uuid.hpp
   include/je2be/version.hpp
-  include/je2be/via/backward.hpp
   include/je2be/volume.hpp
   include/je2be/xxhash.hpp
   include/je2be/zip-file.hpp
@@ -332,35 +331,9 @@ add_subdirectory(deps/minizip-ng EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/cxxopts EXCLUDE_FROM_ALL)
 
-add_executable(create-backward-converter tool/create-backward-converter.cpp)
-target_include_directories(create-backward-converter PRIVATE deps/json/include)
+add_subdirectory(deps/viacxx EXCLUDE_FROM_ALL)
 
-set(via_asset_files
-  #begin via_asset_files
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.10to1.11.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.11to1.12.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.12to1.13.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.13.2to1.14.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.13to1.13.2.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.14to1.15.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.15to1.16.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.16.2to1.17.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.16to1.16.2.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.17to1.18.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.18to1.19.json
-  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/mapping-1.9.4to1.10.json
-  #end via_asset_files
-)
-add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward.hpp
-  COMMAND create-backward-converter ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward.hpp ${CMAKE_CURRENT_SOURCE_DIR}/deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data
-  DEPENDS create-backward-converter ${via_asset_files})
-
-add_custom_target(prepare-backward-converter
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/je2be/via/backward.hpp
-  SOURCES ${via_asset_files})
-
-list(APPEND je2be_link_libraries mcfile leveldb minizip)
+list(APPEND je2be_link_libraries mcfile leveldb minizip viacxx)
 
 add_library(je2be INTERFACE ${je2be_files})
 target_include_directories(je2be INTERFACE
@@ -372,7 +345,6 @@ target_include_directories(je2be INTERFACE
   deps/json/include
   deps/minizip-ng)
 target_link_libraries(je2be INTERFACE ${je2be_link_libraries})
-add_dependencies(je2be prepare-backward-converter)
 
 add_executable(j2b example/j2b.cpp ${je2be_files})
 target_link_libraries(j2b je2be cxxopts)

@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <je2be.hpp>
+#include <via/backwards.hpp>
 
 #if defined(_WIN32)
 #include <fcntl.h>

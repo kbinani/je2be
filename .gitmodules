@@ -25,3 +25,6 @@
 [submodule "deps/ViaBackwards"]
 	path = deps/ViaBackwards
 	url = https://github.com/ViaVersion/ViaBackwards.git
+[submodule "deps/viacxx"]
+	path = deps/viacxx
+	url = https://github.com/kbinani/viacxx.git

@@ -9,9 +9,6 @@
   mcfile_start=$(cat CMakeLists.txt | grep -n '#begin libminecraft-file' | cut -f1 -d:)
   mcfile_end=$(cat CMakeLists.txt | grep -n '#end libminecraft-file' | cut -f1 -d:)
 
-  via_start=$(cat CMakeLists.txt | grep -n '#begin via_asset_files' | cut -f1 -d:)
-  via_end=$(cat CMakeLists.txt | grep -n '#end via_asset_files' | cut -f1 -d:)
-
   tmp=$(mktemp)
 
   cat CMakeLists.txt | head -n ${je2be_start} > "$tmp"
@@ -22,14 +19,8 @@
     cd deps/libminecraft-file
     git ls-files | grep ^include | sed 's:\(.*\):  deps/libminecraft-file/\1:g' >> "$tmp"
   )
-  cat CMakeLists.txt | head -n ${via_start} | tail -n +${mcfile_end} >> "$tmp"
 
-  (
-    cd deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data
-    git ls-files | grep ^mapping- | sed 's:\(.*\):  deps/ViaBackwards/common/src/main/resources/assets/viabackwards/data/\1:g' >> "$tmp"
-  )
-
-  cat CMakeLists.txt | tail -n +${via_end} >> "$tmp"
+  cat CMakeLists.txt | tail -n +${mcfile_end} >> "$tmp"
 
   mv -f "$tmp" CMakeLists.txt
 )
