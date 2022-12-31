@@ -52,6 +52,7 @@ set(je2be_header_files
   include/je2be/db/db.hpp
   include/je2be/db/null-db.hpp
   include/je2be/db/raw-db.hpp
+  include/je2be/db/readonly-env.hpp
   include/je2be/defer.hpp
   include/je2be/dimension-ext.hpp
   include/je2be/entity/armor-stand.hpp
@@ -299,6 +300,7 @@ set(je2be_src_files
   src/box360-tile-entity.cpp
   src/box360-world.cpp
   src/db-raw-db.cpp
+  src/db-readonly-env.cpp
   src/terraform-block-property-accessor.cpp
   src/terraform-fence-connectable.cpp
   src/terraform-leaves.cpp
